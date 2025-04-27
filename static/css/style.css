@@ -1,0 +1,57 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background: #121212;
+    color: white;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    width: 80%;
+    margin: auto;
+    padding: 20px;
+  }
+  
+  h2, h3 {
+    color: #ff0050;
+  }
+  
+  button {
+    background-color: #ff0050;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  button:hover {
+    background-color: #ff336f;
+  }
+  
+  input[type=text], input[type=password], input[type=file] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: none;
+    box-sizing: border-box;
+  }
+  
+  .song-item {
+    background: #1e1e1e;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 15px;
+  }
+  
+  #winner-section {
+    opacity: 0;
+    transition: opacity 1.5s ease;
+  }
+  
+  #winner-section.show {
+    opacity: 1;
+  }
+  

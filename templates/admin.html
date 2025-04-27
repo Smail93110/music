@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Music Party</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="container">
+  <h2>Espace Admin 🎧</h2>
+
+  <form action="/add_song" method="post" enctype="multipart/form-data">
+    <input type="text" name="title" placeholder="Titre de la musique" required>
+    <input type="file" name="file" accept=".mp3" required>
+    <button type="submit">Ajouter musique</button>
+  </form>
+
+  <h3>Playlist actuelle :</h3>
+  <div id="songs-list">
+    {% for song in songs %}
+      <div class="song-item" data-id="{{ song._id }}">
+        <strong>{{ song.title }}</strong> - Votes : <span class="vote-count">{{ song.votes }}</span>
+        <form action="/delete_song/{{ song._id }}" method="post">
+          <button type="submit">Supprimer</button>
+        </form>
+      </div>
+    {% else %}
+      <p>Aucune musique disponible pour l'instant.</p>
+    {% endfor %}
+  </div>
+
+  <div id="admin-winner" style="display:none; margin-top:30px;">
+    <h3>Musique gagnante :</h3>
+    <audio id="admin-winner-audio" controls></audio>
+  </div>
+
+  <a href="/logout" style="display:inline-block; margin-top:30px;">Déconnexion</a>
+</div>
+
+<script>
+let musicPlayed = false;
+let countdownStarted = false;
+let countdown = 8;
+let countdownInterval;
+
+setInterval(() => {
+  fetch('/votes')
+    .then(response => response.json())
+    .then(data => {
+      if (data.length === 0) return;
+
+      const totalVotes = data.reduce((sum, song) => sum + song.votes, 0);
+
+      if (totalVotes > 0 && !countdownStarted) {
+        startCountdown();
+      }
+
+      data.forEach(song => {
+        const item = document.querySelector(`.song-item[data-id='${song._id}']`);
+        if (item) {
+          item.querySelector('.vote-count').innerText = song.votes;
+        }
+      });
+    });
+}, 500);
+
+function startCountdown() {
+  countdownStarted = true;
+  countdownInterval = setInterval(() => {
+    countdown--;
+    if (countdown <= 0) {
+      clearInterval(countdownInterval);
+      fetchWinner();
+    }
+  }, 1000);
+}
+
+function fetchWinner() {
+  fetch('/votes')
+    .then(response => response.json())
+    .then(data => {
+      if (data.length === 0) return;
+      const winner = data.reduce((prev, current) => (prev.votes > current.votes) ? prev : current);
+
+      document.getElementById('admin-winner').style.display = 'block';
+      const audio = document.getElementById('admin-winner-audio');
+      audio.src = winner.file_url;
+      audio.load();
+      audio.play();
+      musicPlayed = true;
+
+      sendMusicState('playing', winner.file_url);
+
+      audio.addEventListener('pause', () => {
+        sendMusicState('stopped', winner.file_url);
+      });
+
+      audio.addEventListener('play', () => {
+        sendMusicState('playing', winner.file_url);
+      });
+
+      audio.addEventListener('ended', () => {
+        fetch('/reset_votes', { method: 'POST' }).then(() => {
+          window.location.reload();
+        });
+      });
+    });
+}
+
+function sendMusicState(status, current_song) {
+  fetch('/music_state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: status, current_song: current_song })
+  });
+}
+</script>
+</body>
+</html>
