@@ -8,7 +8,8 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 app.config['UPLOAD_FOLDER'] = 'static/music/'
 
-client = MongoClient('mongodb+srv://smailouldbey93pro:music1234@cluster0.smslswo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+# client = MongoClient('mongodb+srv://smailouldbey93pro:music1234@cluster0.smslswo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+client = MongoClient('mongodb+srv://smailouldbey93pro:music1234@cluster0.smslswo.mongodb.net/?retryWrites=true&w=majority&ssl=true')
 db = client['music_party']
 songs_collection = db['songs']
 users_collection = db['users']
