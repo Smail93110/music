@@ -5,7 +5,6 @@
   <title>Music Party - Utilisateur</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <style>
-    /* ✅ Petit style propre directement dans le fichier */
     @keyframes blink {
       0% { opacity: 1; }
       50% { opacity: 0.6; }
@@ -25,7 +24,6 @@
 <div class="container">
   <h2>Bienvenue, {{ username }} 🎶</h2>
 
-  <!-- ✅ Message d'égalité -->
   <div id="egalite-message" style="display:none; margin-bottom:20px; color:red; font-weight:bold;">
     ⚡ Égalité détectée : les votes ont été réinitialisés !
   </div>
@@ -42,7 +40,6 @@
     {% endfor %}
   </div>
 
-  <!-- ✅ Nouveau message attente musique -->
   <div id="waiting-message">
     🎵 En attente de la prochaine musique... 🎵
   </div>
@@ -60,121 +57,130 @@
 </div>
 
 <script>
-let countdownStarted = false;
-let countdown = 8;
-let countdownInterval;
-let musicPlayed = false;
-
-document.querySelectorAll('.vote-btn').forEach(button => {
-  button.addEventListener('click', function() {
-    const songId = this.getAttribute('data-id');
-    fetch('/vote/' + songId, { method: 'POST' });
-  });
-});
-
-setInterval(() => {
-  fetch('/votes')
-    .then(response => response.json())
-    .then(data => {
-      data.forEach(song => {
-        const item = document.querySelector(`.song-item[data-id='${song._id}']`);
-        if (item) {
-          item.querySelector('.vote-count').innerText = song.votes;
-        }
+    let countdownStarted = false;
+    let countdown = 8;
+    let countdownInterval;
+    let musicPlayed = false;
+    let lastSong = null;
+    
+    document.querySelectorAll('.vote-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const songId = this.getAttribute('data-id');
+        fetch('/vote/' + songId, { method: 'POST' });
       });
-
-      const allZero = data.every(song => song.votes === 0);
-      if (allZero && musicPlayed) {
-        musicPlayed = false;
-        countdownStarted = false;
-        countdown = 8;
-        document.getElementById('winner-section').style.display = 'none';
-        document.getElementById('vote-section').style.display = 'block';
-        document.getElementById('waiting-message').style.display = 'none';
-        document.getElementById('timer').style.display = 'none';
-        document.getElementById('egalite-message').style.display = 'none';
-      }
     });
-
-  fetch('/compteur')
-    .then(response => response.json())
-    .then(data => {
-      if (data.start_time && !countdownStarted) {
-        startCountdown();
-      }
-    });
-}, 500);
-
-function startCountdown() {
-  countdownStarted = true;
-  countdown = 8;
-  document.getElementById('countdown').innerText = countdown;
-  document.getElementById('timer').style.display = 'block';
-
-  countdownInterval = setInterval(() => {
-    countdown--;
-    document.getElementById('countdown').innerText = countdown;
-    if (countdown <= 0) {
-      clearInterval(countdownInterval);
-      fetchWinner();
-    }
-  }, 1000);
-}
-
-function fetchWinner() {
-  fetch('/winner')
-    .then(response => response.json())
-    .then(data => {
-      if (data.status === 'egalite') {
-        document.getElementById('egalite-message').style.display = 'block';
-        musicPlayed = false;
-        countdownStarted = false;
-        countdown = 8;
-        document.getElementById('winner-section').style.display = 'none';
-        document.getElementById('vote-section').style.display = 'block';
-        document.getElementById('waiting-message').style.display = 'none';
-        document.getElementById('timer').style.display = 'none';
-
-        const audio = document.getElementById('winner-audio');
-        audio.pause();
-        audio.removeAttribute('src');
-        audio.load();
-      } else if (data.status === 'winner') {
-        document.getElementById('egalite-message').style.display = 'none';
-
-        document.getElementById('vote-section').style.display = 'none';
-        document.getElementById('timer').style.display = 'none';
-        document.getElementById('winner-section').style.display = 'block';
-        document.getElementById('waiting-message').style.display = 'block';
-
-        const audio = document.getElementById('winner-audio');
-        audio.src = data.file_url;
-        audio.load();
-        audio.play();
-
-        musicPlayed = true;
-      }
-    });
-}
-
-setInterval(() => {
-  fetch('/music_state')
-    .then(response => response.json())
-    .then(data => {
+    
+    setInterval(() => {
+      fetch('/votes')
+        .then(response => response.json())
+        .then(data => {
+          data.forEach(song => {
+            const item = document.querySelector(`.song-item[data-id='${song._id}']`);
+            if (item) {
+              item.querySelector('.vote-count').innerText = song.votes;
+            }
+          });
+    
+          const allZero = data.every(song => song.votes === 0);
+          if (allZero && musicPlayed) {
+            resetVoting();
+          }
+        });
+    
+      fetch('/compteur')
+        .then(response => response.json())
+        .then(data => {
+          if (data.start_time && !countdownStarted) {
+            startCountdown();
+          }
+        });
+    }, 500);
+    
+    function resetVoting() {
+      musicPlayed = false;
+      countdownStarted = false;
+      countdown = 8;
+      document.getElementById('winner-section').style.display = 'none';
+      document.getElementById('vote-section').style.display = 'block';
+      document.getElementById('waiting-message').style.display = 'none';
+      document.getElementById('timer').style.display = 'none';
+      document.getElementById('egalite-message').style.display = 'none';
+    
       const audio = document.getElementById('winner-audio');
-      if (data.current_song) {
-        document.getElementById('winner-section').style.display = 'block';
-        document.getElementById('waiting-message').style.display = 'block';
-        audio.src = data.current_song;
-        audio.load();
-      }
-      if (data.status === 'playing') {
-        audio.play();
-      } else if (data.status === 'stopped') {
-        audio.pause();
-      }
-    });
-}, 500);
-</script>
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    }
+    
+    function startCountdown() {
+      countdownStarted = true;
+      countdown = 8;
+      document.getElementById('countdown').innerText = countdown;
+      document.getElementById('timer').style.display = 'block';
+    
+      countdownInterval = setInterval(() => {
+        countdown--;
+        document.getElementById('countdown').innerText = countdown;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          fetchWinner();
+        }
+      }, 1000);
+    }
+    
+    function fetchWinner() {
+      fetch('/winner')
+        .then(response => response.json())
+        .then(data => {
+          const audio = document.getElementById('winner-audio');
+    
+          if (data.status === 'egalite') {
+            resetVoting();
+            document.getElementById('egalite-message').style.display = 'block';
+          } else if (data.status === 'winner') {
+            document.getElementById('egalite-message').style.display = 'none';
+    
+            document.getElementById('vote-section').style.display = 'none';
+            document.getElementById('timer').style.display = 'none';
+            document.getElementById('winner-section').style.display = 'block';
+            document.getElementById('waiting-message').style.display = 'block';
+    
+            if (lastSong !== data.file_url) {
+              lastSong = data.file_url;
+              audio.src = data.file_url;
+              audio.load();
+              audio.oncanplaythrough = () => {
+                audio.play().catch(e => console.error(e));
+              };
+            }
+            musicPlayed = true;
+          }
+        });
+    }
+    
+    setInterval(() => {
+      fetch('/music_state')
+        .then(response => response.json())
+        .then(data => {
+          const audio = document.getElementById('winner-audio');
+          if (data.current_song) {
+            const newSrc = data.current_song.startsWith('/static') ? (window.location.origin + data.current_song) : data.current_song;
+            if (audio.src !== newSrc) {
+              audio.src = newSrc;
+              audio.load();
+              audio.oncanplaythrough = () => {
+                audio.play().catch(e => console.error(e));
+              };
+            }
+          }
+          if (data.status === 'playing' && audio.paused) {
+            audio.play().catch(e => console.error(e));
+          } else if (data.status === 'stopped' && !audio.paused) {
+            audio.pause();
+          }
+        });
+    }, 500);
+    </script>
+    
 </body>
 </html>
